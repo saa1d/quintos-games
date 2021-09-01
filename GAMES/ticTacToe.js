@@ -61,23 +61,65 @@ let board = [
 
 let turnX = true;
 
+function checkDraw() {
+	for (let row = 0; row < 3; row++) {
+		for (let col = 0; col < 3; col++) {
+			if (board[row][col] == ' ') {
+				return false;
+			}
+		}
+	}
+	return true;
+}
+
+function checkWinner(mark) {
+	for (let i = 0; i < 3; i++) {
+		if (board[i][0] == mark && board[i][1] == mark && board[i][2] == mark) {
+			return true;
+		}
+
+		if (board[0][i] == mark && board[1][i] == mark && board[2][i] == mark) {
+			return true;
+		}
+	}
+
+	if (board[0][0] == mark && board[1][1] == mark && board[2][2] == mark) {
+		return true;
+	}
+
+	if (board[2][0] == mark && board[1][1] == mark && board[0][2] == mark) {
+		return true;
+	}
+	return false;
+}
+
 async function btnClicked(row, col) {
 	if (board[row][col] != ' ') {
-		await pc.alert("This space is occupied!")
+		await pc.alert("This space is occupied!", 55, 20, 20);
 		return;
 	}
 	console.log(row, col);
 	let x = gridX + 9 * col;
 	let y = gridY + 8 * row;
 
+	let mark;
 	if (turnX == true) {
-		board[row][col] = 'x';
+		mark = 'x';
 		pc.text(bigX, x, y);
 	} else {
-		board[row][col] = 'o';
+		mark = 'o';
 		pc.text(bigO, x, y);
 	}
+	board[row][col] = mark;
 	console.log(board.join('\n'));
+
+	if (checkWinner(mark) == true) {
+		await pc.alert("You have won!", 55, 20, 20);
+	}
+
+	if (checkDraw() == true) {
+		await pc.alert("It is a draw!", 55, 20, 20);
+	}
 
 	turnX = !turnX; // change turns by flipping true/false
 }
