@@ -59,7 +59,24 @@ let board = [
 	[' ', ' ', ' ']
 ];
 
+let gameOver = false;
 let turnX = true;
+let singlePlayer = false;
+let scoreX = 0;
+let scoreO = 0;
+
+function displayTurn() {
+	if (turnX) {
+		pc.text("it is X's turn!", 55, 3);
+	} else {
+		pc.text("it is O's turn!", 55, 3);
+	}
+}
+
+function displayScore() {
+	pc.text("Player X's Score: " + scoreX, 55, 5);
+	pc.text("Player O's Score: " + scoreO, 55, 7);
+}
 
 function checkDraw() {
 	for (let row = 0; row < 3; row++) {
@@ -93,7 +110,10 @@ function checkWinner(mark) {
 	return false;
 }
 
-async function btnClicked(row, col) {
+async function takeTurn(row, col) {
+	if (gameOver) {
+		return;
+	}
 	if (board[row][col] != ' ') {
 		await pc.alert("This space is occupied!", 55, 20, 20);
 		return;
@@ -103,34 +123,99 @@ async function btnClicked(row, col) {
 	let y = gridY + 8 * row;
 
 	let mark;
-	if (turnX == true) {
+	if (turnX) {
 		mark = 'x';
-		pc.text(bigX, x, y);
+		await pc.text(bigX, x, y);
 	} else {
 		mark = 'o';
-		pc.text(bigO, x, y);
+		await pc.text(bigO, x, y);
 	}
 	board[row][col] = mark;
 	console.log(board.join('\n'));
 
-	if (checkWinner(mark) == true) {
-		await pc.alert("You have won!", 55, 20, 20);
+	if (checkWinner(mark)) {
+		gameOver = true;
+		await pc.alert("Player " + mark + " you have won!", 55, 20, 20);
+
+		if (turnX) {
+			scoreX++;
+		} else {
+			scoreO++;
+		}
+		displayScore();
+
+		reset();
+		return;
 	}
 
-	if (checkDraw() == true) {
+	if (checkDraw()) {
+		gameOver = true;
 		await pc.alert("It is a draw!", 55, 20, 20);
+		reset();
+		return;
 	}
 
 	turnX = !turnX; // change turns by flipping true/false
-}
+	displayTurn();
 
-/* PART A: Make the buttons in the grid */
-for (let row = 0; row < 3; row++) {
-	for (let col = 0; col < 3; col++) {
-		let x = gridX + 9 * col;
-		let y = gridY + 8 * row;
-		pc.button(bigSpace, x, y, () => {
-			btnClicked(row, col);
-		});
+	if (!turnX && singlePlayer) {
+		aiTurn();
 	}
 }
+
+function aiTurn() {
+	for (let row = 0; row < 3; row++) {
+		for (let col = 0; col < 3; col++) {
+			if (board[row][col] == ' ') {
+				takeTurn(row, col);
+				return;
+			}
+		}
+	}
+}
+
+async function reset() {
+	for (let row = 0; row < 3; row++) {
+		for (let col = 0; col < 3; col++) {
+			let x = gridX + 9 * col;
+			let y = gridY + 8 * row;
+			await pc.text(bigSpace, x, y);
+			board[row][col] = ' ';
+		}
+	}
+	gameOver = false;
+	startGame();
+}
+
+function startGame() {
+	turnX = Math.random() < .5;
+	if (turnX == false) {
+		aiTurn();
+	}
+}
+
+async function setupGame() {
+	await pc.eraseRect(55, 10, 1, 3);
+	/* PART A: Make the buttons in the grid */
+	for (let row = 0; row < 3; row++) {
+		for (let col = 0; col < 3; col++) {
+			let x = gridX + 9 * col;
+			let y = gridY + 8 * row;
+			pc.button(bigSpace, x, y, () => {
+				takeTurn(row, col);
+			});
+		}
+	}
+	displayTurn();
+	displayScore();
+	startGame();
+}
+
+pc.button('Single Player', 55, 10, () => {
+	singlePlayer = true;
+	setupGame();
+});
+
+pc.button('Multi Player', 55, 12, () => {
+	setupGame();
+});
